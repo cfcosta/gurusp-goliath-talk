@@ -5,13 +5,13 @@
 # Cainã Costa #
 * @sryche
 
-!SLIDE center
-# Hoje é Sabagato! #
-![Hoje é Caturday!](caturday.jpg)
-
 !SLIDE bullets incremental
 # Disclaimer #
 * Minha primeira palestra na vida.
+
+!SLIDE center
+# EVENTOS!!!1!onze!1 #
+![Eventos!](ariel-hipster.jpg)
 
 !SLIDE
 # Eventos são maneiros, mas... #
@@ -24,8 +24,7 @@
 
 # Podemos simplesmente nos acostumar com o modelo evented! #
 
-* Mas... Eu tenho preguiça!
-* Sério, é só por isso.
+* Mas jual a graça disso?
 
 !SLIDE
 # Existe outra solução? #
@@ -33,6 +32,10 @@
 !SLIDE
 
 # Fibers! #
+
+!SLIDE center
+
+![Roflscale!](not-sure.jpg)
 
 !SLIDE
 # Mas primeiro, um histórico #
@@ -105,6 +108,18 @@
 
 !SLIDE
 
+# Yay! #
+
+    @@@ ruby
+    data = async_fetch('http://jsonip.com/')
+
+    post = async_fetch('http://localhost:9292/',
+        :post, timeout: 10, body: {ip: data.response})
+
+    puts post.response
+
+!SLIDE
+
 # EventMachine::Synchrony
 
 !SLIDE
@@ -135,3 +150,11 @@
 
 !SLIDE
 # Goliath! #
+
+!SLIDE
+# EventMachine + HTTP Parser rápido + Fibers = <3 #
+
+!SLIDE incremental
+# Goliath::API #
+* Classe principal de uma aplicação
+* Classe com o mesmo nome do arquivo
