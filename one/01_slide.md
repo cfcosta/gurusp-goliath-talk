@@ -18,24 +18,11 @@
 
 * Eles são difíceis de testar
 * Eles são difíceis de acompanhar
-* Eles não são o que estamos acostumados...
-
-!SLIDE bullets incremental
-
-# Podemos simplesmente nos acostumar com o modelo evented! #
-
-* Mas qual a graça disso?
+* Eles não são o que a maioria de nós está acostumada...
+* Callback hell! :-(
 
 !SLIDE
-# Existe outra solução? #
-
-!SLIDE
-
-# Fibers ao resgate! #
-
-!SLIDE center
-
-![Roflscale!](not-sure.jpg)
+# Temos outras opções? #
 
 !SLIDE
 # Threads no MRI não são concorrentes! #
@@ -62,10 +49,13 @@
 ![Fibers vs Threads](fibers-vs-threads.png)
 
 !SLIDE
-# Beleza, mas pra que serve? #
+
+# Ok, mas como isso nos ajuda com nosso problema? #
 
 !SLIDE
+
 # EventMachine! #
+
 * O EM roda I/Os em Threads separadas, e retorna um callback quando terminam
 * Podemos colocar todo nosso código em Fibers, parar e resumir quando acabar
 
@@ -95,7 +85,7 @@
 
 !SLIDE
 
-# Nisso! Look, ma! No callbacks! #
+# Num pedaço de amor em forma de código #
 
     @@@ ruby
     require 'fiber'
@@ -159,19 +149,193 @@
     end
 
 !SLIDE
+
 # O EM::Synchrony cuida da parte complicada pra gente...
 * Coloca o bloco inteiro dentro de uma Fiber
 * Cuida do scheduling da Fiber para parar/retornar assim que um I/O blocante ocorrer
 
 !SLIDE
+
 # Mas e se isso fosse aplicado para o Rack? #
 
 !SLIDE
+
 # Goliath! #
 
 !SLIDE
+
 # EventMachine + HTTP Parser rápido + Fibers = <3 #
 
-!SLIDE incremental
+!SLIDE
+
 # Goliath::API #
-* Classe principal de uma aplicação
+
+* Todo "Service" deve herdar dessa classe
+* Fornece métodos para cuidar de requisições HTTP
+* A API é diferente do rack, mas funciona da mesma maneira
+
+!SLIDE
+
+# Um "Service" do Goliath #
+
+    @@@ ruby
+    require 'goliath'
+
+    class Hello < Goliath::API
+      def response(env)
+        [200, {}, "Hello World"]
+      end
+    end
+
+!SLIDE
+
+# Middlewares #
+
+* Possuem interface parecida com os do Rack, e funcionam da mesma maneira
+* Funcionam por composição, podendo ser acumulados
+
+!SLIDE
+
+# Middlewares #
+
+    @@@ ruby
+    require 'goliath'
+
+    class Hello < Goliath::API
+      use Goliath::Rack::Params # Te permite acessar os parâmetros rack-style
+      use Goliath::Rack::DefaultMimeType  # Define Mime-types!
+      use Goliath::Rack::Formatters::JSON  # Responde com JSON
+      use Goliath::Rack::Render  # Adiciona o content-type automagicamente
+      use Goliath::Rack::Heartbeat # responde em /status with 200 (Monitoramento)
+
+      def response(env)
+        [200, {}, "Hello World"]
+      end
+    end
+
+!SLIDE
+
+# Streaming #
+
+* Suportado nativamente, e com EventMachine fica ainda mais fácil
+
+!SLIDE
+
+# Streaming #
+
+    @@@ ruby
+    require 'goliath'
+
+    class Stream < Goliath::API
+      def on_close(env)
+        env.logger.info "Connection closed."
+      end
+
+      def response(env)
+        i = 0
+        pt = EM.add_periodic_timer(1) do
+          env.stream_send("#{i}\n")
+          i += 1
+        end
+
+        EM.add_timer(10) do
+          pt.cancel
+
+          env.stream_send("!! BOOM !!\n")
+          env.stream_close
+        end
+
+        streaming_response(202, {'X-Stream' => 'Goliath'})
+      end
+    end
+
+!SLIDE
+
+# Roteamento #
+
+* É feito com uma camada de Proxy, ligando cada serviço a um path.
+* A classe de proxy não precisa definir o método #response
+
+!SLIDE
+
+# Roteamento #
+
+    @@@ ruby
+    class HelloWorld < Goliath::API
+      def response(env) ; [200, {}, 'Hello World!']
+    end
+
+    class PostHelloWorld < Goliath::API
+      def response(env) ; [200, {}, 'Hello World!']
+    end
+
+    class APIRouter < Goliath::API
+      get '/hello_world', HelloWorld
+      post '/hello_world', PostHelloWorld
+    end
+
+!SLIDE
+
+# Configuração #
+
+* O goliath carrega automaticamente um arquivo com o mesmo nome, dentro da pasta `./config`
+* Dentro desse arquivo, `config` fica disponível como um hash.
+* Chaves definidas por esse hash viram métodos dentro do arquivo source.
+
+!SLIDE
+
+# Configuração #
+
+    @@@ ruby
+    # Na config
+    config['redis'] = Redis.new
+
+    # No código
+    def response(env)
+      redis
+    end
+
+!SLIDE
+
+# Testando #
+
+* Testar código do Goliath é tão simples quanto testar código não evented.
+* O Goliath fornece um test_helper chamado `with_api(api_class)`, e o código roda dentro de um bloco
+
+!SLIDE
+
+# Testando #
+
+    @@@ ruby
+    # spec_helper.rb
+    require 'goliath/test_helper'
+    RSpec.configure do |c|
+      c.include Goliath::TestHelper
+    end
+
+    # E no teste...
+    describe MyApi do
+      it "should work" do
+        with_api(MyApi) do |api|
+          api.config['mysql'] = mock # Dependency Injection!
+          response = get_request(path: '/status')
+          response.response_header.status.should eq 200
+        end
+      end
+    end
+
+!SLIDE center
+![Thanks!](thanks.jpg)
+
+!SLIDE
+# Food for thought #
+* nio4r, celluloid, celluloid-io (ruby)
+* NIO, Netty (java)
+* node-fibers (javascript)
+
+!SLIDE
+# Referências #
+* http://goliath.io
+* http://ruby-doc.org/core-1.9.3/Fiber.html
+* http://www.igvita.com/2009/05/13/fibers-cooperative-scheduling-in-ruby/
+* http://www.igvita.com/2010/03/22/untangling-evented-code-with-ruby-fibers/
