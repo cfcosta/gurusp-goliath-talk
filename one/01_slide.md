@@ -24,25 +24,38 @@
 
 # Podemos simplesmente nos acostumar com o modelo evented! #
 
-* Mas jual a graça disso?
+* Mas qual a graça disso?
 
 !SLIDE
 # Existe outra solução? #
 
 !SLIDE
 
-# Fibers! #
+# Fibers ao resgate! #
 
 !SLIDE center
 
 ![Roflscale!](not-sure.jpg)
 
 !SLIDE
-# Mas primeiro, um histórico #
+# Threads no MRI não são concorrentes! #
+* (jRuby e Rubinius 2.0 escapam dessa)
 
 !SLIDE center
 # Global Interpreter Lock #
 ![Global Interpreter Lock](ruby-gil.png)
+
+!SLIDE
+# Fair Scheduler #
+* Cada Thread tem um tempo (10ms) para rodar
+* Após isso, ela é interrompida e a próxima toma seu lugar
+
+!SLIDE
+# Fibers #
+* Funcionam de maneiras parecidas com Threads
+* O scheduling fica a cargo do programador
+* Mais leve/rápido, mas mais complexo
+* Sem concorrência
 
 !SLIDE center
 # Fibers vs Threads #
@@ -50,6 +63,11 @@
 
 !SLIDE
 # Beleza, mas pra que serve? #
+
+!SLIDE
+# EventMachine! #
+* O EM roda I/Os em Threads separadas, e retorna um callback quando terminam
+* Podemos colocar todo nosso código em Fibers, parar e resumir quando acabar
 
 !SLIDE
 
@@ -157,4 +175,3 @@
 !SLIDE incremental
 # Goliath::API #
 * Classe principal de uma aplicação
-* Classe com o mesmo nome do arquivo
