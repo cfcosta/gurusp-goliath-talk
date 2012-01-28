@@ -5,13 +5,29 @@
 # Cainã Costa #
 * @sryche
 
-!SLIDE bullets incremental
+!SLIDE bullets
 # Disclaimer #
 * Minha primeira palestra na vida.
 
 !SLIDE center
 # EVENTOS!!!1!onze!1 #
 ![Eventos!](ariel-hipster.jpg)
+
+!SLIDE
+# EventMachine #
+
+* Muito tempo perdido esperando I/O (Aplicações I/O Bound)
+* Pouco tempo de real processamento
+
+!SLIDE
+# EventMachine #
+
+* Peça por I/O
+* Processe outras coisas
+* Quando o I/O voltar, continue o que estava fazendo
+
+!SLIDE
+# Callbacks! #
 
 !SLIDE
 # Eventos são maneiros, mas... #
